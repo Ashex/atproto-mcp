@@ -1,0 +1,36 @@
+[project]
+name = "atproto-mcp"
+version = "0.1.1"
+description = "MCP server providing AT Protocol documentation, lexicons, Bluesky API docs, and cookbook examples as a searchable knowledge base powered by txtai semantic search."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "atproto-mcp contributors" }]
+keywords = ["mcp", "atproto", "bluesky", "lexicon", "txtai"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+dependencies = [
+    "mcp[cli]>=1.6.0",
+    "pydantic>=2.0.0",
+    "txtai>=7.0.0",
+    "gitpython>=3.1.0",
+    "pyyaml>=6.0",
+]
+
+[project.scripts]
+atproto-mcp = "atproto_mcp.server:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/atproto_mcp"]
