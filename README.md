@@ -74,6 +74,7 @@ Add to `.vscode/mcp.json` in your workspace:
     }
   }
 }
+```
 
 ### Claude Desktop
 
@@ -90,9 +91,6 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
     }
   }
 }
-```
-
-
 ```
 
 ## Environment Variables
