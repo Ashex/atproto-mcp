@@ -105,10 +105,10 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 On first launch, the server:
 
-1. **Clones** the 4 source repositories into `~/.cache/atproto-mcp/repos/` (shallow clones, ~minutes)
-2. **Parses** MDX documentation, lexicon JSON schemas, and cookbook examples into text chunks
-3. **Indexes** all chunks using txtai with the `all-MiniLM-L6-v2` sentence-transformer model (~80MB, runs locally on CPU)
-4. **Persists** the index to `~/.cache/atproto-mcp/index/` for fast subsequent starts
+1. Shallow clones the repos into `~/.cache/atproto-mcp/repos/`
+2. Parses MDX docs, lexicon schemas, and cookbook examples into text chunks
+3. Indexes the chunks using txtai with the `all-MiniLM-L6-v2` sentence-transformer model (~80MB, runs locally)
+4. Index is persisted in `~/.cache/atproto-mcp/index/` for subsequent starts
 
 On subsequent launches, the cached index loads in seconds. Repos older than 24 hours are automatically refreshed with `git pull`.
 
