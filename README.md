@@ -93,6 +93,37 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 }
 ```
 
+### MCPHub
+
+Add to `~/.config/mcphub/servers.json`:
+
+```json
+{
+  "mcpServers": {
+    "atproto": {
+      "command": "uvx",
+      "args": ["atproto-mcp"]
+    }
+  }
+}
+```
+
+### OpenCode
+
+Add to your `opencode.json`:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "atproto": {
+      "type": "local",
+      "command": ["uvx", "atproto-mcp"]
+    }
+  }
+}
+```
+
 ## Environment Variables
 
 | Variable | Default | Description |
