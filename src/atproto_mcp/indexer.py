@@ -139,18 +139,13 @@ class KnowledgeBase:
         if not self._embeddings:
             return []
 
-        if source:
-            results = self._embeddings.search(
-                f"select id, text, score from txtai where similar('{_escape_sql(query)}') and "
-                f"tags is not null limit {limit}"
-            )
-        else:
-            results = self._embeddings.search(query, limit=limit)
+        fetch_limit = limit if not source else max(limit * 5, 50)
+        results = self._embeddings.search(query, limit=fetch_limit)
 
         return self._enrich_results(
             list(results) if isinstance(results, list) else [],  # type: ignore[arg-type]
             source_filter=source,
-        )
+        )[:limit]
 
     def search_lexicons(self, query: str, limit: int = 10) -> list[dict[str, object]]:
         """Semantic search specifically within lexicons."""
@@ -254,11 +249,6 @@ class KnowledgeBase:
     @property
     def lexicon_count(self) -> int:
         return len(self._lexicon_map)
-
-
-def _escape_sql(value: str) -> str:
-    """Escape single quotes for txtai SQL queries."""
-    return value.replace("'", "''")
 
 
 def build_knowledge_base(config: Config, chunks: list[ContentChunk]) -> KnowledgeBase:

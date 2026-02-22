@@ -1,5 +1,7 @@
 # atproto-mcp
 
+[![Tests](https://github.com/Ashex/atproto-mcp/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/Ashex/atproto-mcp/actions/workflows/tests.yml)
+
 MCP server providing a searchable knowledge base for the [AT Protocol](https://atproto.com/) ecosystem — protocol documentation, lexicon schemas, Bluesky developer API docs, and cookbook examples — powered by [txtai](https://github.com/neuml/txtai) semantic search.
 
 ## Data Sources
