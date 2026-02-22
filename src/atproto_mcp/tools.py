@@ -62,6 +62,7 @@ def register_tools(mcp: FastMCP) -> None:
     def search_atproto_docs(
         query: str,
         source: str = "",
+        content_type: str = "",
         limit: int = 10,
     ) -> str:
         """Search across all AT Protocol documentation, lexicons, Bluesky API docs, and cookbook examples.
@@ -78,12 +79,28 @@ def register_tools(mcp: FastMCP) -> None:
                     "lexicons" (AT Protocol lexicon schemas),
                     "cookbook" (example projects and code).
                     Leave empty to search all sources.
+            content_type: Optional filter — restrict to a content type:
+                    "guide" (tutorials and how-to guides),
+                    "spec" (protocol specifications),
+                    "blog" (blog posts),
+                    "reference" (lexicon schemas and API references),
+                    "example" (cookbook examples and code).
+                    Leave empty to search all types.
             limit: Maximum number of results (1-20, default 10).
         """
         kb = get_kb()
         limit = max(1, min(20, limit))
         source_filter = source if source in _VALID_SOURCES else None
-        results = kb.search(query, source=source_filter, limit=limit)
+        tag_filters: list[str] = []
+        _valid_content_types = {"guide", "spec", "blog", "reference", "example"}
+        if content_type in _valid_content_types:
+            tag_filters.append(f"content_type:{content_type}")
+        results = kb.search(
+            query,
+            source=source_filter,
+            tags=tag_filters or None,
+            limit=limit,
+        )
         return _format_search_results(results)
 
     @mcp.tool()

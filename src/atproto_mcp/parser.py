@@ -33,6 +33,7 @@ class ContentChunk:
     nsid: str = ""  # for lexicons only
     language: str = ""  # for cookbook examples (python, go, typescript, etc.)
     metadata: dict[str, str] = field(default_factory=dict)
+    tags: list[str] = field(default_factory=list)
 
     @property
     def uid(self) -> str:
@@ -40,6 +41,89 @@ class ContentChunk:
         if self.nsid:
             return f"{self.source}:{self.nsid}"
         return f"{self.source}:{self.file_path}:{self.title}"
+
+
+def encode_tags(tags: list[str]) -> str:
+    """Encode a tag list into a pipe-delimited string for txtai storage.
+
+    Format: ``|tag1|tag2|tag3|`` — leading/trailing pipes ensure
+    unambiguous ``LIKE '%|tag|%'`` matching in SQL queries.
+    """
+    if not tags:
+        return ""
+    return "|" + "|".join(sorted(set(tags))) + "|"
+
+
+def _build_website_tags(rel_path: str) -> list[str]:
+    """Generate tags for an atproto-website document."""
+    tags = [f"source:{SOURCE_ATPROTO_WEBSITE}", "domain:atproto.com"]
+    path_lower = rel_path.lower()
+    if "/blog/" in path_lower or path_lower.startswith("blog/"):
+        tags.append("content_type:blog")
+    elif any(seg in path_lower for seg in ("/specs/", "/lexicon")):
+        tags.append("content_type:spec")
+    else:
+        tags.append("content_type:guide")
+    topic = _extract_path_topic(rel_path)
+    if topic:
+        tags.append(f"topic:{topic}")
+    return tags
+
+
+def _build_bsky_docs_tags(rel_path: str) -> list[str]:
+    """Generate tags for a bsky-docs document."""
+    tags = [f"source:{SOURCE_BSKY_DOCS}", "domain:docs.bsky.app"]
+    path_lower = rel_path.lower()
+    if path_lower.startswith("blog/") or "/blog/" in path_lower:
+        tags.append("content_type:blog")
+    else:
+        tags.append("content_type:guide")
+    topic = _extract_path_topic(rel_path)
+    if topic:
+        tags.append(f"topic:{topic}")
+    return tags
+
+
+def _build_lexicon_tags(nsid: str, lexicon: dict) -> list[str]:  # type: ignore[type-arg]
+    """Generate tags for a lexicon document."""
+    tags = [f"source:{SOURCE_LEXICONS}", "domain:github.com", "content_type:reference"]
+    parts = nsid.split(".")
+    if len(parts) >= 3:
+        tags.append(f"namespace:{'.'.join(parts[:3])}")
+    defs = lexicon.get("defs", {})
+    main_def = defs.get("main", {})
+    def_type = main_def.get("type", "")
+    if def_type:
+        tags.append(f"lexicon_type:{def_type}")
+    return tags
+
+
+def _build_cookbook_tags(language: str) -> list[str]:
+    """Generate tags for a cookbook example."""
+    tags = [f"source:{SOURCE_COOKBOOK}", "domain:github.com", "content_type:example"]
+    if language and language != "unknown":
+        tags.append(f"language:{language}")
+    return tags
+
+
+def _extract_path_topic(rel_path: str) -> str:
+    """Extract a topic tag from a file path.
+
+    Returns the first meaningful directory segment (e.g. ``guides``,
+    ``advanced-guides``, ``specs``) or empty string.
+    """
+    path = rel_path
+    for prefix in ("src/app/", "src/mdx/", "content/", "docs/"):
+        if path.startswith(prefix):
+            path = path[len(prefix):]
+            break
+    path = re.sub(r"^[a-z]{2}/", "", path)
+    parts = path.split("/")
+    if len(parts) > 1:
+        topic = parts[0].lower().strip()
+        if topic and topic not in ("index", "page"):
+            return topic
+    return ""
 
 
 # Regex to strip JSX/MDX component tags like <ExplainerUnit>, <Tabs>, etc.
@@ -81,6 +165,7 @@ def _chunk_by_headings(
     base_title: str,
     url: str = "",
     min_chunk_len: int = 50,
+    tags: list[str] | None = None,
 ) -> list[ContentChunk]:
     """Split markdown text by H2/H3 headings into chunks."""
     heading_pattern = re.compile(r"^(#{2,3})\s+(.+)$", re.MULTILINE)
@@ -99,6 +184,7 @@ def _chunk_by_headings(
                     file_path=file_path,
                     title=base_title,
                     url=url,
+                    tags=tags or [],
                 )
             )
         return chunks
@@ -112,6 +198,7 @@ def _chunk_by_headings(
                 file_path=file_path,
                 title=base_title,
                 url=url,
+                tags=tags or [],
             )
         )
 
@@ -129,6 +216,7 @@ def _chunk_by_headings(
                     file_path=file_path,
                     title=f"{base_title} > {heading_title}",
                     url=url,
+                    tags=tags or [],
                 )
             )
 
@@ -178,8 +266,9 @@ def parse_atproto_website(config: Config) -> list[ContentChunk]:
         if len(cleaned) < 50:
             continue
 
+        tags = _build_website_tags(rel_path)
         file_chunks = _chunk_by_headings(
-            cleaned, rel_path, SOURCE_ATPROTO_WEBSITE, title, url
+            cleaned, rel_path, SOURCE_ATPROTO_WEBSITE, title, url, tags=tags
         )
         chunks.extend(file_chunks)
 
@@ -235,8 +324,9 @@ def parse_bsky_docs(config: Config) -> list[ContentChunk]:
         if len(cleaned) < 50:
             continue
 
+        tags = _build_bsky_docs_tags(rel_path)
         file_chunks = _chunk_by_headings(
-            cleaned, rel_path, SOURCE_BSKY_DOCS, title, url
+            cleaned, rel_path, SOURCE_BSKY_DOCS, title, url, tags=tags
         )
         chunks.extend(file_chunks)
 
@@ -278,6 +368,7 @@ def parse_lexicons(config: Config) -> list[ContentChunk]:
         text = _format_lexicon(lexicon)
         title = nsid
 
+        tags = _build_lexicon_tags(nsid, lexicon)
         chunks.append(
             ContentChunk(
                 text=text,
@@ -287,6 +378,7 @@ def parse_lexicons(config: Config) -> list[ContentChunk]:
                 nsid=nsid,
                 url=f"https://github.com/bluesky-social/atproto/blob/main/{rel_path}",
                 metadata={"raw_json": raw},
+                tags=tags,
             )
         )
 
@@ -445,6 +537,7 @@ def parse_cookbook(config: Config) -> list[ContentChunk]:
                 except OSError:
                     pass
 
+        tags = _build_cookbook_tags(language)
         chunks.append(
             ContentChunk(
                 text=text,
@@ -453,6 +546,7 @@ def parse_cookbook(config: Config) -> list[ContentChunk]:
                 title=title,
                 language=language,
                 url=f"https://github.com/bluesky-social/cookbook/tree/main/{project_name}",
+                tags=tags,
             )
         )
 
