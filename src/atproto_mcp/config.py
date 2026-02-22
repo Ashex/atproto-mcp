@@ -1,10 +1,9 @@
 """Configuration for the AT Protocol MCP server."""
 
-from __future__ import annotations
-
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Self
 
 _DEFAULT_CACHE_DIR = Path.home() / ".cache" / "atproto-mcp"
 
@@ -47,7 +46,7 @@ class Config:
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
 
     @classmethod
-    def from_env(cls) -> Config:
+    def from_env(cls) -> Self:
         """Build configuration from environment variables."""
         cache_dir_str = os.environ.get("ATPROTO_MCP_CACHE_DIR")
         cache_dir = Path(cache_dir_str) if cache_dir_str else _DEFAULT_CACHE_DIR

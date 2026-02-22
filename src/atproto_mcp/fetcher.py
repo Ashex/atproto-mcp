@@ -1,7 +1,5 @@
 """Git-based content fetcher for AT Protocol repositories."""
 
-from __future__ import annotations
-
 import json
 import logging
 import time

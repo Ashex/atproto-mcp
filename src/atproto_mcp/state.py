@@ -1,12 +1,7 @@
 """Shared application state populated during server lifespan."""
 
-from __future__ import annotations
-
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from atproto_mcp.config import Config
-    from atproto_mcp.indexer import KnowledgeBase
+from atproto_mcp.config import Config
+from atproto_mcp.indexer import KnowledgeBase
 
 # Module-level references set during server lifespan.
 # These are populated by server.py's app_lifespan() before any

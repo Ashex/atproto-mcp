@@ -1,15 +1,11 @@
 """MCP resource definitions for browsable AT Protocol content."""
 
-from __future__ import annotations
-
 import json
 import logging
-from typing import TYPE_CHECKING
+
+from mcp.server.fastmcp import FastMCP
 
 from atproto_mcp.state import get_kb
-
-if TYPE_CHECKING:
-    from mcp.server.fastmcp import FastMCP
 
 logger = logging.getLogger(__name__)
 

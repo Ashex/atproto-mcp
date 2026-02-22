@@ -7,7 +7,7 @@ from pathlib import Path
 from txtai import Embeddings
 
 from atproto_mcp.config import Config
-from atproto_mcp.parser import ContentChunk
+from atproto_mcp.parser import ContentChunk, encode_tags
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +46,7 @@ class KnowledgeBase:
             self._chunks_by_uid[uid] = chunk
             if chunk.nsid:
                 self._lexicon_map[chunk.nsid] = chunk
-            documents.append((uid, chunk.text, None))
+            documents.append((uid, chunk.text, encode_tags(chunk.tags)))
 
         self._embeddings.index(documents)
 
@@ -87,9 +87,10 @@ class KnowledgeBase:
         meta_path = self._config.index_dir / "chunk_meta.json"
         data = []
         for chunk in chunks:
-            entry: dict[str, str] = {"uid": chunk.uid}
+            entry: dict[str, str | list[str]] = {"uid": chunk.uid}
             for key in _META_KEYS:
                 entry[key] = getattr(chunk, key, "")
+            entry["tags"] = chunk.tags
             if chunk.nsid and "raw_json" in chunk.metadata:
                 entry["raw_json"] = chunk.metadata["raw_json"]
             data.append(entry)
@@ -103,6 +104,10 @@ class KnowledgeBase:
 
         data = json.loads(meta_path.read_text(encoding="utf-8"))
         for entry in data:
+            stored_tags = entry.get("tags", [])
+            # Backward compat: reconstruct source tag if tags are missing
+            if not stored_tags and entry.get("source"):
+                stored_tags = [f"source:{entry['source']}"]
             chunk = ContentChunk(
                 text="",  # text is in txtai, we only need meta here
                 source=entry.get("source", ""),
@@ -112,6 +117,7 @@ class KnowledgeBase:
                 nsid=entry.get("nsid", ""),
                 language=entry.get("language", ""),
                 metadata={"raw_json": entry["raw_json"]} if "raw_json" in entry else {},
+                tags=stored_tags,
             )
             uid = entry.get("uid", chunk.uid)
             self._chunks_by_uid[uid] = chunk
@@ -124,6 +130,7 @@ class KnowledgeBase:
         query: str,
         *,
         source: str | None = None,
+        tags: list[str] | None = None,
         limit: int = 10,
     ) -> list[dict[str, object]]:
         """Semantic search across the knowledge base.
@@ -131,25 +138,65 @@ class KnowledgeBase:
         Args:
             query: Natural language search query.
             source: Optional source filter (atproto-website, bsky-docs, cookbook, lexicons).
+            tags: Optional tag filters (e.g. ``["content_type:guide"]``).
             limit: Maximum number of results.
 
         Returns:
-            List of result dicts with keys: uid, text, score, source, title, url, nsid, language.
+            List of result dicts with keys: uid, text, score, source, title,
+            url, nsid, language, tags.
         """
         if not self._embeddings:
             return []
 
-        fetch_limit = limit if not source else max(limit * 5, 50)
-        results = self._embeddings.search(query, limit=fetch_limit)
+        tag_filters: list[str] = list(tags) if tags else []
+        if source:
+            tag_filters.append(f"source:{source}")
+
+        if tag_filters:
+            results = self._filtered_search(query, tag_filters, limit)
+        else:
+            results = self._embeddings.search(query, limit=limit)
 
         return self._enrich_results(
             list(results) if isinstance(results, list) else [],  # type: ignore[arg-type]
             source_filter=source,
         )[:limit]
 
+    def _filtered_search(
+        self,
+        query: str,
+        tag_filters: list[str],
+        limit: int,
+    ) -> list[object]:
+        """Execute a tag-filtered semantic search using txtai SQL."""
+        if not self._embeddings:
+            return []  # pragma: no cover
+
+        escaped_query = query.replace("'", "''")
+        where_parts = [f"similar('{escaped_query}')"]
+        for tag in tag_filters:
+            escaped_tag = tag.replace("'", "''")
+            where_parts.append(f"tags LIKE '%|{escaped_tag}|%'")
+        where_clause = " AND ".join(where_parts)
+        sql = f"SELECT id, text, score FROM txtai WHERE {where_clause} LIMIT {limit}"
+
+        # Over-fetch ANN candidates so enough survive tag filtering
+        ann_limit = max(limit * 5, 100)
+        try:
+            return self._embeddings.search(sql, limit=ann_limit)  # type: ignore[return-value]
+        except Exception:
+            logger.warning(
+                "SQL-filtered search failed, falling back to unfiltered",
+                exc_info=True,
+            )
+            fetch_limit = max(limit * 5, 50)
+            return self._embeddings.search(query, limit=fetch_limit)  # type: ignore[return-value]
+
     def search_lexicons(self, query: str, limit: int = 10) -> list[dict[str, object]]:
         """Semantic search specifically within lexicons."""
-        return self.search(query, source="lexicons", limit=limit)
+        return self.search(
+            query, source="lexicons", tags=["content_type:reference"], limit=limit
+        )
 
     def search_bsky_api(self, query: str, limit: int = 10) -> list[dict[str, object]]:
         """Semantic search specifically within Bluesky API docs."""
@@ -190,6 +237,7 @@ class KnowledgeBase:
                 "url": chunk.url if chunk else "",
                 "nsid": chunk.nsid if chunk else "",
                 "language": chunk.language if chunk else "",
+                "tags": chunk.tags if chunk else [],
             }
             enriched.append(entry)
 
