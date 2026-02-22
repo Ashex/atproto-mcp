@@ -1,6 +1,6 @@
 [project]
 name = "atproto-mcp"
-version = "0.1.1"
+version = "0.1.2"
 description = "MCP server providing AT Protocol documentation, lexicons, Bluesky API docs, and cookbook examples as a searchable knowledge base powered by txtai semantic search."
 readme = "README.md"
 requires-python = ">=3.10"
