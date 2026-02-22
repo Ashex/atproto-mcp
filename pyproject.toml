@@ -1,19 +1,17 @@
 [project]
 name = "atproto-mcp"
-version = "0.1.2"
-description = "MCP server providing AT Protocol documentation, lexicons, Bluesky API docs, and cookbook examples as a searchable knowledge base powered by txtai semantic search."
+version = "0.2.0"
+description = "MCP server providing AT Protocol documentation, lexicons, Bluesky API docs, and cookbook examples as a searchable knowledge base powered by semantic search."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 license = { text = "MIT" }
-authors = [{ name = "atproto-mcp contributors" }]
+authors = [{ name = "Evelyn Osman" }]
 keywords = ["mcp", "atproto", "bluesky", "lexicon", "txtai"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
 ]
