@@ -76,6 +76,12 @@ Add to `.vscode/mcp.json` in your workspace:
 }
 ```
 
+### Kiro Power
+
+1. Open **Kiro → Powers**
+2. Select **Import power from GitHub**
+3. Enter `https://github.com/ashex/atproto-mcp`
+
 ### Claude Desktop
 
 Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:

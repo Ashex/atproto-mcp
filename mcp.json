@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "atproto": {
+      "command": "uvx",
+      "args": [
+        "atproto-mcp"
+      ],
+      "env": {
+        "ATPROTO_MCP_CACHE_DIR": "${ATPROTO_MCP_CACHE_DIR}",
+        "ATPROTO_MCP_REFRESH_HOURS": "${ATPROTO_MCP_REFRESH_HOURS}",
+        "ATPROTO_MCP_EMBEDDING_MODEL": "${ATPROTO_MCP_EMBEDDING_MODEL}"
+      }
+    }
+  }
+}
