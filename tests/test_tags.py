@@ -1,7 +1,5 @@
 """Tests for the document tagging system."""
 
-from __future__ import annotations
-
 import re
 import unittest
 

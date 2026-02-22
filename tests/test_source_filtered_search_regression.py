@@ -1,7 +1,5 @@
 """Regression tests for source-filtered semantic search."""
 
-from __future__ import annotations
-
 import re
 import unittest
 

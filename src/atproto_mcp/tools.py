@@ -1,10 +1,9 @@
 """MCP tool definitions for the AT Protocol knowledge base server."""
 
-from __future__ import annotations
-
 import json
 import logging
-from typing import TYPE_CHECKING
+
+from mcp.server.fastmcp import FastMCP
 
 from atproto_mcp.config import (
     SOURCE_ATPROTO_WEBSITE,
@@ -13,9 +12,6 @@ from atproto_mcp.config import (
     SOURCE_LEXICONS,
 )
 from atproto_mcp.state import get_kb
-
-if TYPE_CHECKING:
-    from mcp.server.fastmcp import FastMCP
 
 logger = logging.getLogger(__name__)
 

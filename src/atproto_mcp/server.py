@@ -4,8 +4,6 @@ Provides semantic search over AT Protocol documentation, lexicons,
 Bluesky API docs, and cookbook examples via the Model Context Protocol.
 """
 
-from __future__ import annotations
-
 import logging
 import sys
 from collections.abc import AsyncIterator
